@@ -31,24 +31,26 @@ namespace Project1
         AnimatedTexture playerWalk;
         AnimatedTexture playerDash;
         List<Ghost> ghosts;
-        AnimatedTexture playerSwing;
+        public AnimatedTexture playerSwing;
         private const float depth = 0.5f;
 
-        private const float GroundDragFactor = 0.8f;
-        private const float MoveAcceleration = 3000f;
+        private const int DashThreshold = 125;
+        private const int DashSpeed = 20;
+        private const float GroundDragFactor = 0.48f;
+        private const float MoveAcceleration = 8000f;
         private const float MaxMoveSpeed = 1750f;
         private float Xmovement;
         private float Ymovement;
         private Vector2 velocity;
-        private Vector2 characterPos;
+        public Vector2 characterPos;
         private const int frameRows = 4;
         private const int frames = 4;
-        private const int framesPerSec = 8;
+        private const int framesPerSec = 4;
 
         float cooldowntime = 1;
         KeyboardState currentKeyState;
         KeyboardState previousKeyState;
-        bool isSwinging;
+        public bool isSwinging;
 
         public void Initialize()
         {
@@ -83,7 +85,7 @@ namespace Project1
 
             if (velocity == Vector2.Zero)
                 playerIdle.UpdateFrame(elapsed, characterPos);
-            else if (velocity.X < -220 || velocity.Y < -220 || velocity.X > 220 || velocity.Y > 220)
+            else if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
             {
                 ghosts.Add(new Ghost(characterPos, 0.5f));
             }
@@ -101,6 +103,8 @@ namespace Project1
 
             Xmovement = 0f;
             Ymovement = 0f;
+
+            Debug.WriteLine(characterPos.ToString());
 
         }
         private void GetInput(KeyboardState kstate, float elapsed)
@@ -131,8 +135,8 @@ namespace Project1
 
             if (currentKeyState.IsKeyDown(Keys.LeftControl) && !previousKeyState.IsKeyDown(Keys.LeftControl))
             {
-                Xmovement *= 20;
-                Ymovement *= 20;
+                Xmovement *= DashSpeed;
+                Ymovement *= DashSpeed;
             }
 
             cooldowntime += elapsed;
@@ -181,7 +185,7 @@ namespace Project1
             {
                 Vector2 updatedCharacterPos = characterPos + new Vector2(-16, -24);
                 playerSwing.DrawFrame(spriteBatch, updatedCharacterPos, characterDir);
-                if (velocity.X < -220 || velocity.Y < -220 || velocity.X > 220 || velocity.Y > 220)
+                if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
                 {
                     foreach (var ghost in ghosts)
                     {
@@ -197,7 +201,7 @@ namespace Project1
             {
                 if (velocity == Vector2.Zero)
                     playerIdle.DrawFrame(spriteBatch, characterPos, characterDir);
-                else if (velocity.X < -220 || velocity.Y < -220 || velocity.X > 220 || velocity.Y > 220)
+                else if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
                 {
                     playerDash.DrawFrame(spriteBatch, characterPos, characterDir);
                     foreach (var ghost in ghosts)
