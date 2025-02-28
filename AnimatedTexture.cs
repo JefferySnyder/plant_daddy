@@ -50,6 +50,10 @@ namespace Project1
             Position = pos;
         }
 
+        public void DrawFrame(SpriteBatch batch, Vector2 screenPos)
+        {
+            DrawFrame(batch, screenPos, Facing.Down, Color.White);
+        }
         public void DrawFrame(SpriteBatch batch, Vector2 screenPos, Facing dir)
         {
             DrawFrame(batch, screenPos, dir, Color.White);
@@ -60,14 +64,26 @@ namespace Project1
         }
 
         // SpriteEffects.FlipHorizontally
+        int FrameWidth;
+        int FrameHeight;
         public void DrawFrame(SpriteBatch batch, int frame, Vector2 screenPos, Facing dir, Color color)
         {
-            int FrameWidth = Texture.Width / frameCount;
-            int FrameHeight = Texture.Height / frameRows;
+            FrameWidth = Texture.Width / frameCount;
+            FrameHeight = Texture.Height / frameRows;
             Rectangle sourcerect = new (FrameWidth * frame, FrameHeight * (int)dir,
                 FrameWidth, FrameHeight);
+
+            Texture2D _texture = new(graphicsDevice, 1, 1);
+            _texture.SetData(new Color[] { Color.DarkSlateGray });
+            batch.Draw(_texture, screenPos, this.Rect(), color,
+                0, Origin, 1, SpriteEffects.None, Depth);
+
             batch.Draw(Texture, screenPos, sourcerect, color,
                 0, Origin, 1, SpriteEffects.None, Depth);
+        }
+        public Rectangle Rect()
+        {
+            return base.Rect(FrameWidth, FrameHeight);
         }
 
         public bool IsPaused
