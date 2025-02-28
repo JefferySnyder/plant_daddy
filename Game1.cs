@@ -10,12 +10,17 @@ namespace Project1
 {
     public class Game1 : Game
     {
+        AnimatedTexture lettuce;
+        Vector2 lettucePos;
+
         Player player;
 
         private TileMap.TileMap map;
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+
+        public static GraphicsDevice graphicsDevice;
 
         // To sizeup view
         private RenderTarget2D renderTarget;
@@ -42,8 +47,11 @@ namespace Project1
             player = new();
             player.Initialize();
             map = new TileMap.TileMap();
+            lettuce = new(Vector2.Zero, 0.5f);
+            lettucePos = new(gameWidth / 4, gameHeight / 4);
 
             renderTarget = new RenderTarget2D(GraphicsDevice, gameWidth, gameHeight);
+            graphicsDevice = GraphicsDevice;
             base.Initialize();
         }
 
@@ -54,6 +62,7 @@ namespace Project1
             // TODO: use this.Content to load your game content here
             player.Load(Content);
             map.Load(Content, "ground-tiles");
+            lettuce.Load(Content, "Lettuce_Growth", 5, 0, 1);
         }
 
         protected override void Update(GameTime gameTime)
@@ -63,6 +72,12 @@ namespace Project1
 
             // TODO: Add your update logic here
             player.Update(gameTime);
+
+            if (player.playerSwing.Rect().Intersects(lettuce.Rect()) && player.isSwinging)
+                lettuce.IsAlive = false;
+
+            lettuce.UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, lettucePos);
+
             base.Update(gameTime);
         }
 
@@ -73,9 +88,12 @@ namespace Project1
 
             // TODO: Add your drawing code here
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
             map.Draw(_spriteBatch);
             player.Draw(_spriteBatch);
+            if (lettuce.IsAlive)
+            {
+                lettuce.DrawFrame(_spriteBatch, lettucePos);
+            }
             _spriteBatch.End();
 
             // Upscale resolution via target Rectangle
