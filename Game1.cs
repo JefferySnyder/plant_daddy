@@ -26,14 +26,16 @@ namespace Project1
         private RenderTarget2D renderTarget;
         public const int gameWidth = 400;
         public const int gameHeight = 225;
-        private Rectangle upScaledResolution = new (0, 0, 1920, 1080);
+        public const int screenWidth = 1440;
+        public const int screenHeight = 810;
+        private Rectangle upScaledResolution = new (0, 0, screenWidth, screenHeight);
 
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this)
             {
-                PreferredBackBufferWidth = 1920,
-                PreferredBackBufferHeight = 1080,
+                PreferredBackBufferWidth = screenWidth,
+                PreferredBackBufferHeight = screenHeight,
             };
 
             Content.RootDirectory = "Content";
@@ -63,6 +65,7 @@ namespace Project1
             player.Load(Content);
             map.Load(Content, "ground-tiles");
             lettuce.Load(Content, "Lettuce_Growth", 5, 0, 1);
+            lettuce.SetFrame(4);
         }
 
         protected override void Update(GameTime gameTime)
@@ -73,10 +76,17 @@ namespace Project1
             // TODO: Add your update logic here
             player.Update(gameTime);
 
-            if (player.playerSwing.Rect().Intersects(lettuce.Rect()) && player.isSwinging)
-                lettuce.IsAlive = false;
-
             lettuce.UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, lettucePos);
+
+            //var lettuceRectangle = new Rectangle((int)lettuce.Position.X, (int)lettuce.Position.Y, 16, 16);
+            //if (player.getSwingCollision().Intersects(new Rectangle((int)lettuce.Position.X, (int)lettuce.Position.Y, 16, 16))) ;
+            if (player.isSwinging && player.getSwingCollision().Intersects(lettuce.Rect()))
+                lettuce.IsAlive = false;
+            if (Keyboard.GetState().IsKeyDown(Keys.R))
+                lettuce.IsAlive = true;
+
+            //Debug.WriteLine("player: " + player.getSwingCollision());
+            //Debug.WriteLine("lettuce:" + new Rectangle((int)lettuce.Position.X, (int)lettuce.Position.Y, 16, 16));
 
             base.Update(gameTime);
         }
@@ -92,7 +102,7 @@ namespace Project1
             player.Draw(_spriteBatch);
             if (lettuce.IsAlive)
             {
-                lettuce.DrawFrame(_spriteBatch, lettucePos);
+                lettuce.DrawFrame(_spriteBatch);
             }
             _spriteBatch.End();
 
