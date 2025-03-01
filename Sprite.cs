@@ -16,9 +16,5 @@ namespace Project1
             Position = position;
         }
         public Sprite() { }
-        public Rectangle Rect(int width, int height)
-        {
-            return new Rectangle((int)Position.X, (int)Position.Y, width, height);
-        }
     }
 }
