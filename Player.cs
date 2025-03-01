@@ -27,11 +27,12 @@ namespace Project1
     {
         private Facing characterDir;
 
-        AnimatedTexture playerIdle;
-        AnimatedTexture playerWalk;
-        AnimatedTexture playerDash;
+        public AnimatedTexture playerIdle;
+        public AnimatedTexture playerWalk;
+        public AnimatedTexture playerDash;
         List<Ghost> ghosts;
         public AnimatedTexture playerSwing;
+        private Vector2 playerSwingOffset = new Vector2(16,24);
         private const float depth = 0.5f;
 
         private const int DashThreshold = 125;
@@ -67,6 +68,7 @@ namespace Project1
             playerWalk.Load(content, "Player_Walks", 8, framesPerSec * 2, frameRows);
             playerDash.Load(content, "Player_Dashes", 1, 1, frameRows * 2);
             playerSwing.Load(content, "Player_Swings", 7, 14, frameRows);
+            // Have to set custom rect size after load
             characterPos = new Vector2(Game1.gameWidth / 2, Game1.gameHeight / 2);
         }
         public void Update(GameTime gameTime)
@@ -81,30 +83,24 @@ namespace Project1
 
             ApplyPhysics(elapsed);
 
-            CheckCollisions();
-
-            if (velocity == Vector2.Zero)
-                playerIdle.UpdateFrame(elapsed, characterPos);
-            else if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
+            if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
             {
                 ghosts.Add(new Ghost(characterPos, 0.5f));
             }
             else
             {
-                playerWalk.UpdateFrame(elapsed, characterPos);
                 if (ghosts != null && ghosts.Count > 0 && ghosts[0].opacity <= 0f)
                     ghosts.Clear();
             }
 
-            if (isSwinging)
-            {
-                playerSwing.UpdateFrame(elapsed, characterPos);
-            }
+            playerIdle.UpdateFrame(elapsed, characterPos);
+            playerWalk.UpdateFrame(elapsed, characterPos);
+            playerSwing.UpdateFrame(elapsed, characterPos - playerSwingOffset);
 
             Xmovement = 0f;
             Ymovement = 0f;
 
-            Debug.WriteLine(characterPos.ToString());
+            //Debug.WriteLine(characterPos.ToString());
 
         }
         private void GetInput(KeyboardState kstate, float elapsed)
@@ -142,11 +138,18 @@ namespace Project1
             cooldowntime += elapsed;
 
             if (cooldowntime > 0.5)
+            {
+                //if (isSwinging)
+                //    characterPos += new Vector2(16, 24);
+
                 isSwinging = false;
+            }
             if (cooldowntime >= 0.5 && kstate.IsKeyDown(Keys.Space))
             {
                 isSwinging = true;
+                playerSwing.Reset();
                 cooldowntime = 0;
+                //characterPos += new Vector2(-16, -24);
             }
         }
         private void ApplyPhysics(float elapsed)
@@ -170,29 +173,20 @@ namespace Project1
             if (characterPos.Y == previousPosition.Y)
                 velocity.Y = 0;
         }
-        private void CheckCollisions()
-        {
-            if (characterPos.X < 0) characterPos.X = Game1.gameWidth;
-            if (characterPos.X > Game1.gameWidth) characterPos.X = 0;
-
-            if (characterPos.Y < 0) characterPos.Y = Game1.gameHeight;
-            if (characterPos.Y > Game1.gameHeight) characterPos.Y = 0;
-        }
 
         public void Draw(SpriteBatch spriteBatch)
         {
             if (isSwinging)
             {
-                Vector2 updatedCharacterPos = characterPos + new Vector2(-16, -24);
-                playerSwing.DrawFrame(spriteBatch, updatedCharacterPos, characterDir);
+                playerSwing.DrawFrame(spriteBatch, characterDir);
                 if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
                 {
                     foreach (var ghost in ghosts)
                     {
                         if (characterDir == Facing.Left || characterDir == Facing.Right)
-                            playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(0, -5), characterDir + 4, Color.White * ghost.opacity);
+                            playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(20,18), characterDir + 4, Color.White * ghost.opacity);
                         else
-                            playerDash.DrawFrame(spriteBatch, ghost.pos, characterDir + 4, Color.White * ghost.opacity);
+                            playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(16,18), characterDir + 4, Color.White * ghost.opacity);
                         ghost.opacity -= 0.075f;
                     }
                 }
@@ -212,9 +206,27 @@ namespace Project1
                 }
                 else
                 {
-                    playerWalk.DrawFrame(spriteBatch, characterPos, characterDir);
+                    playerWalk.DrawFrame(spriteBatch, characterDir);
                 }
             }
+        }
+        public Rectangle getCollision()
+        {
+            return new Rectangle((int)characterPos.X, (int)characterPos.Y, 16, 16);
+        }
+        public Rectangle getSwingCollision()
+        {
+            Vector2 centered = playerSwing.Position + playerSwingOffset;
+            if (characterDir == Facing.Down)
+                centered += new Vector2(0, 16);
+            if (characterDir == Facing.Left)
+                centered -= new Vector2(16, 0);
+            if (characterDir == Facing.Up)
+                centered -= new Vector2(0, 16);
+            if (characterDir == Facing.Right)
+                centered += new Vector2(16, 0);
+
+            return new Rectangle((int)centered.X, (int)centered.Y, 16, 16);
         }
     }
 }
