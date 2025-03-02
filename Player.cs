@@ -52,6 +52,7 @@ namespace Project1
         KeyboardState currentKeyState;
         KeyboardState previousKeyState;
         public bool isSwinging;
+        Rectangle initialSwingCollision;
 
         public void Initialize()
         {
@@ -108,28 +109,28 @@ namespace Project1
             //Xmovement = 0f; Ymovement = 0f;
 
             //if (kstate.IsKeyDown(Keys.Space))
-            if (kstate.IsKeyDown(Keys.Up))
+            if (kstate.IsKeyDown(Keys.Up) || kstate.IsKeyDown(Keys.W))
             {
                 Ymovement = -1f;
                 characterDir = Facing.Up;
             }
-            if (kstate.IsKeyDown(Keys.Down))
+            if (kstate.IsKeyDown(Keys.Down) || kstate.IsKeyDown(Keys.S))
             {
                 Ymovement = 1f;
                 characterDir = Facing.Down;
             }
-            if (kstate.IsKeyDown(Keys.Left))
+            if (kstate.IsKeyDown(Keys.Left) || kstate.IsKeyDown(Keys.A))
             {
                 Xmovement = -1f;
                 characterDir = Facing.Left;
             }
-            if (kstate.IsKeyDown(Keys.Right))
+            if (kstate.IsKeyDown(Keys.Right) || kstate.IsKeyDown(Keys.D))
             {
                 Xmovement = 1f;
                 characterDir = Facing.Right;
             }
 
-            if (currentKeyState.IsKeyDown(Keys.LeftControl) && !previousKeyState.IsKeyDown(Keys.LeftControl))
+            if (currentKeyState.IsKeyDown(Keys.Space) && !previousKeyState.IsKeyDown(Keys.Space))
             {
                 Xmovement *= DashSpeed;
                 Ymovement *= DashSpeed;
@@ -139,16 +140,14 @@ namespace Project1
 
             if (cooldowntime > 0.5)
             {
-                //if (isSwinging)
-                //    characterPos += new Vector2(16, 24);
-
                 isSwinging = false;
             }
-            if (cooldowntime >= 0.5 && kstate.IsKeyDown(Keys.Space))
+            if (cooldowntime >= 0.5 && kstate.IsKeyDown(Keys.J))
             {
                 isSwinging = true;
                 playerSwing.Reset();
                 cooldowntime = 0;
+                initialSwingCollision = getSwingCollision();
                 //characterPos += new Vector2(-16, -24);
             }
         }
@@ -216,7 +215,8 @@ namespace Project1
         }
         public Rectangle getSwingCollision()
         {
-            Vector2 centered = playerSwing.Position + playerSwingOffset;
+            // to get character center
+            Vector2 centered = playerIdle.Position + new Vector2(8, 4);
             if (characterDir == Facing.Down)
                 centered += new Vector2(0, 16);
             if (characterDir == Facing.Left)
@@ -226,7 +226,9 @@ namespace Project1
             if (characterDir == Facing.Right)
                 centered += new Vector2(16, 0);
 
-            return new Rectangle((int)centered.X, (int)centered.Y, 16, 16);
+            int gridX = ((int)centered.X / 16) * 16;
+            int gridY = ((int)centered.Y / 16) * 16;
+            return new Rectangle(gridX, gridY, 16, 16);
         }
     }
 }

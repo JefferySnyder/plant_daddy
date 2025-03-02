@@ -10,10 +10,10 @@ namespace Project1
 {
     public class Game1 : Game
     {
-        AnimatedTexture lettuce;
-        Vector2 lettucePos;
+        bool showDebugBox = true;
 
         Player player;
+        RepeatedItem lettuce;
 
         private TileMap.TileMap map;
 
@@ -49,8 +49,8 @@ namespace Project1
             player = new();
             player.Initialize();
             map = new TileMap.TileMap();
-            lettuce = new(Vector2.Zero, 0.5f);
-            lettucePos = new(gameWidth / 4, gameHeight / 4);
+            lettuce = new RepeatedItem();
+            lettuce.Initialize();
 
             renderTarget = new RenderTarget2D(GraphicsDevice, gameWidth, gameHeight);
             graphicsDevice = GraphicsDevice;
@@ -64,8 +64,7 @@ namespace Project1
             // TODO: use this.Content to load your game content here
             player.Load(Content);
             map.Load(Content, "ground-tiles");
-            lettuce.Load(Content, "Lettuce_Growth", 5, 0, 1);
-            lettuce.SetFrame(4);
+            lettuce.Load(Content, "Lettuce_Growth");
         }
 
         protected override void Update(GameTime gameTime)
@@ -76,17 +75,25 @@ namespace Project1
             // TODO: Add your update logic here
             player.Update(gameTime);
 
-            lettuce.UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, lettucePos);
+            int end = lettuce.items.Count;
+            for (int i = 0; i < end; i++)
+            {
+                if (player.isSwinging && player.getSwingCollision().Intersects(lettuce.items[i].Rect()) && player.playerSwing.GetFrame() == 4)
+                {
+                    lettuce.items.RemoveAt(i);
+                    end--;
+                }
+            }
 
-            //var lettuceRectangle = new Rectangle((int)lettuce.Position.X, (int)lettuce.Position.Y, 16, 16);
-            //if (player.getSwingCollision().Intersects(new Rectangle((int)lettuce.Position.X, (int)lettuce.Position.Y, 16, 16))) ;
-            if (player.isSwinging && player.getSwingCollision().Intersects(lettuce.Rect()))
-                lettuce.IsAlive = false;
-            if (Keyboard.GetState().IsKeyDown(Keys.R))
-                lettuce.IsAlive = true;
-
-            //Debug.WriteLine("player: " + player.getSwingCollision());
-            //Debug.WriteLine("lettuce:" + new Rectangle((int)lettuce.Position.X, (int)lettuce.Position.Y, 16, 16));
+            if (Keyboard.GetState().IsKeyDown(Keys.K))
+            {
+                AnimatedTexture tempAT = new AnimatedTexture(Vector2.Zero, 0.5f);
+                tempAT.LoadWithoutContent(5, 0, 1);
+                tempAT.Texture = lettuce.texture;
+                tempAT.Position = new Vector2(player.getSwingCollision().Location.X,
+                                              player.getSwingCollision().Location.Y);
+                lettuce.items.Add(tempAT);
+            }
 
             base.Update(gameTime);
         }
@@ -98,12 +105,21 @@ namespace Project1
 
             // TODO: Add your drawing code here
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            Color color = Color.Transparent;
+            if (showDebugBox)
+                color = Color.DarkSlateGray;
+            Texture2D _texture = new Texture2D(GraphicsDevice, 1, 1);
+            _texture.SetData(new Color[] { color });
+
             map.Draw(_spriteBatch);
-            player.Draw(_spriteBatch);
-            if (lettuce.IsAlive)
+            foreach (var i in lettuce.items)
             {
-                lettuce.DrawFrame(_spriteBatch);
+                _spriteBatch.Draw(_texture, i.Rect(), Color.White);
             }
+            if (player.isSwinging)
+                _spriteBatch.Draw(_texture, player.getSwingCollision(), Color.White);
+            lettuce.Draw(_spriteBatch);
+            player.Draw(_spriteBatch);
             _spriteBatch.End();
 
             // Upscale resolution via target Rectangle

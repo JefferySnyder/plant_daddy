@@ -26,6 +26,15 @@ namespace Project1
             this.Depth = depth;
         }
 
+        public void LoadWithoutContent(int frameCount, int framesPerSec, int frameRows)
+        {
+            this.frameCount = frameCount;
+            this.frameRows = frameRows;
+            timePerFrame = (float)1 / framesPerSec;
+            frame = 0;
+            totalElapsed = 0;
+            isPaused = false;
+        }
         public void Load(ContentManager content, string asset, int frameCount, int framesPerSec, int frameRows)
         {
             this.frameCount = frameCount;
@@ -118,6 +127,10 @@ namespace Project1
         public void SetFrame(int customeFrame)
         {
             frame = customeFrame;
+        }
+        public int GetFrame()
+        {
+            return frame;
         }
         public Rectangle Rect()
         {
