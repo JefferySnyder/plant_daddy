@@ -26,10 +26,11 @@ namespace Project1
             this.Depth = depth;
         }
 
-        public void LoadWithoutContent(int frameCount, int framesPerSec, int frameRows)
+        public void LoadWithoutContent(Texture2D texture, int frameCount, int framesPerSec, int frameRows)
         {
             this.frameCount = frameCount;
             this.frameRows = frameRows;
+            this.Texture = texture;
             timePerFrame = (float)1 / framesPerSec;
             frame = 0;
             totalElapsed = 0;
@@ -121,7 +122,7 @@ namespace Project1
         }
         public void NextFrame()
         {
-            if (frame < frameCount)
+            if (frame < frameCount - 1)
                 frame++;
         }
         public void SetFrame(int customeFrame)

@@ -14,8 +14,12 @@ namespace Project1
 
         Player player;
         RepeatedItem lettuce;
+        RepeatedItem pot;
 
         private TileMap.TileMap map;
+
+        KeyboardState currentKeyState;
+        KeyboardState previousKeyState;
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -51,6 +55,8 @@ namespace Project1
             map = new TileMap.TileMap();
             lettuce = new RepeatedItem();
             lettuce.Initialize();
+            pot = new RepeatedItem();
+            pot.Initialize();
 
             renderTarget = new RenderTarget2D(GraphicsDevice, gameWidth, gameHeight);
             graphicsDevice = GraphicsDevice;
@@ -65,6 +71,7 @@ namespace Project1
             player.Load(Content);
             map.Load(Content, "ground-tiles");
             lettuce.Load(Content, "Lettuce_Growth");
+            pot.Load(Content, "Soil_Pot");
         }
 
         protected override void Update(GameTime gameTime)
@@ -72,12 +79,17 @@ namespace Project1
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            previousKeyState = currentKeyState;
+            var kstate = Keyboard.GetState();
+            currentKeyState = kstate;
+
             // TODO: Add your update logic here
             player.Update(gameTime);
 
             int end = lettuce.items.Count;
             for (int i = 0; i < end; i++)
             {
+                lettuce.items[i].UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, lettuce.items[i].Position);
                 if (player.isSwinging && player.getSwingCollision().Intersects(lettuce.items[i].Rect()) && player.playerSwing.GetFrame() == 4)
                 {
                     lettuce.items.RemoveAt(i);
@@ -85,15 +97,60 @@ namespace Project1
                 }
             }
 
-            if (Keyboard.GetState().IsKeyDown(Keys.K))
+            if (kstate.IsKeyDown(Keys.K) && previousKeyState.IsKeyDown(Keys.K))
             {
-                AnimatedTexture tempAT = new AnimatedTexture(Vector2.Zero, 0.5f);
-                tempAT.LoadWithoutContent(5, 0, 1);
-                tempAT.Texture = lettuce.texture;
-                tempAT.Position = new Vector2(player.getSwingCollision().Location.X,
-                                              player.getSwingCollision().Location.Y);
-                lettuce.items.Add(tempAT);
+                bool occupied = false;
+                foreach (var lettuce in lettuce.items)
+                {
+                    if (lettuce.Rect().Location == player.getSwingCollision().Location)
+                        occupied = true;
+                }
+                bool valid = false;
+                foreach (var pot in pot.items)
+                {
+                    if (pot.Rect().Location == player.getSwingCollision().Location)
+                    {
+                        valid = true;
+                    }
+                }
+                if (!occupied && valid)
+                {
+                    AnimatedTexture tempAT = new AnimatedTexture(Vector2.Zero, 0.5f);
+                    tempAT.LoadWithoutContent(lettuce.texture, 5, 5, 1);
+                    tempAT.Position = new Vector2(player.getSwingCollision().Location.X,
+                                                  player.getSwingCollision().Location.Y);
+                    lettuce.items.Add(tempAT);
+                }
             }
+            if (kstate.IsKeyDown(Keys.L) && previousKeyState.IsKeyDown(Keys.L))
+            {
+                bool occupied = false;
+                foreach (var item in pot.items)
+                {
+                    if (item.Rect().Location == player.getSwingCollision().Location)
+                        occupied = true;
+                }
+                if (!occupied)
+                {
+                    AnimatedTexture tempAT = new AnimatedTexture(Vector2.Zero, 0.5f);
+                    tempAT.LoadWithoutContent(pot.texture, 2, 0, 1);
+                    tempAT.Position = new Vector2(player.getSwingCollision().Location.X,
+                                                  player.getSwingCollision().Location.Y);
+                    pot.items.Add(tempAT);
+                }
+            }
+            // change pot animation
+            if (kstate.IsKeyDown(Keys.OemSemicolon) && previousKeyState.IsKeyDown(Keys.OemSemicolon))
+            {
+                foreach (var pot in pot.items)
+                {
+                    if (pot.Rect().Location == player.getSwingCollision().Location)
+                    {
+                        pot.NextFrame();
+                    }
+                }
+            }
+
 
             base.Update(gameTime);
         }
@@ -112,12 +169,13 @@ namespace Project1
             _texture.SetData(new Color[] { color });
 
             map.Draw(_spriteBatch);
-            foreach (var i in lettuce.items)
-            {
-                _spriteBatch.Draw(_texture, i.Rect(), Color.White);
-            }
+            //foreach (var i in lettuce.items)
+            //{
+            //    _spriteBatch.Draw(_texture, i.Rect(), Color.White);
+            //}
             if (player.isSwinging)
                 _spriteBatch.Draw(_texture, player.getSwingCollision(), Color.White);
+            pot.Draw(_spriteBatch);
             lettuce.Draw(_spriteBatch);
             player.Draw(_spriteBatch);
             _spriteBatch.End();
