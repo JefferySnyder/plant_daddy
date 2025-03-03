@@ -1,5 +1,7 @@
 # plant_daddy
 
+### Game Ideas
+
 ### TODO Checklist
 - [x] Plant grows one frame per water
 - [x] Pot unwaters after each growth frame
@@ -8,3 +10,8 @@
 - [x] Hydro Pot requires one water per growth cycle
 - [x] Inventory determines left click
 - [x] Inventory determined by scroll wheel
+- [ ] Plants grow slower if not watered
+- [ ] Full grown lettuce gives one extra point?
+- [ ] Each seed takes one point
+- [ ] Regular water takes one point
+- [ ] Hydro water takes two points
