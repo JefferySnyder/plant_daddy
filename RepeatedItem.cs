@@ -19,9 +19,6 @@ namespace Project1
         {
             texture = content.Load<Texture2D>(asset);
         }
-        public void Update(GameTime gameTime)
-        {
-        }
         public void Draw(SpriteBatch spriteBatch)
         {
             foreach (var i in items)
