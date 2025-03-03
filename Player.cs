@@ -48,9 +48,13 @@ namespace Project1
         private const int frames = 4;
         private const int framesPerSec = 4;
 
+        public int inventory = 0;
+        public int points = 0;
         float cooldowntime = 1;
         KeyboardState currentKeyState;
         KeyboardState previousKeyState;
+        MouseState currentMouseState;
+        MouseState previousMouseState;
         public bool isSwinging;
         Rectangle initialSwingCollision;
 
@@ -76,11 +80,7 @@ namespace Project1
         {
             float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            previousKeyState = currentKeyState;
-            var kstate = Keyboard.GetState();
-            currentKeyState = kstate;
-
-            GetInput(kstate, elapsed);
+            GetInput(elapsed);
 
             ApplyPhysics(elapsed);
 
@@ -104,27 +104,32 @@ namespace Project1
             //Debug.WriteLine(characterPos.ToString());
 
         }
-        private void GetInput(KeyboardState kstate, float elapsed)
+        private void GetInput(float elapsed)
         {
+            previousKeyState = currentKeyState;
+            currentKeyState = Keyboard.GetState();
+
+            previousMouseState = currentMouseState;
+            currentMouseState = Mouse.GetState();
             //Xmovement = 0f; Ymovement = 0f;
 
             //if (kstate.IsKeyDown(Keys.Space))
-            if (kstate.IsKeyDown(Keys.Up) || kstate.IsKeyDown(Keys.W))
+            if (currentKeyState.IsKeyDown(Keys.Up) || currentKeyState.IsKeyDown(Keys.W))
             {
                 Ymovement = -1f;
                 characterDir = Facing.Up;
             }
-            if (kstate.IsKeyDown(Keys.Down) || kstate.IsKeyDown(Keys.S))
+            if (currentKeyState.IsKeyDown(Keys.Down) || currentKeyState.IsKeyDown(Keys.S))
             {
                 Ymovement = 1f;
                 characterDir = Facing.Down;
             }
-            if (kstate.IsKeyDown(Keys.Left) || kstate.IsKeyDown(Keys.A))
+            if (currentKeyState.IsKeyDown(Keys.Left) || currentKeyState.IsKeyDown(Keys.A))
             {
                 Xmovement = -1f;
                 characterDir = Facing.Left;
             }
-            if (kstate.IsKeyDown(Keys.Right) || kstate.IsKeyDown(Keys.D))
+            if (currentKeyState.IsKeyDown(Keys.Right) || currentKeyState.IsKeyDown(Keys.D))
             {
                 Xmovement = 1f;
                 characterDir = Facing.Right;
@@ -142,13 +147,32 @@ namespace Project1
             {
                 isSwinging = false;
             }
-            if (cooldowntime >= 0.5 && kstate.IsKeyDown(Keys.J))
+            // Swing = J
+            if (cooldowntime >= 0.5 && (currentKeyState.IsKeyDown(Keys.J) || currentMouseState.LeftButton == ButtonState.Pressed))
             {
                 isSwinging = true;
                 playerSwing.Reset();
                 cooldowntime = 0;
                 initialSwingCollision = getSwingCollision();
-                //characterPos += new Vector2(-16, -24);
+            }
+            if (currentKeyState.IsKeyDown(Keys.D1) && !previousKeyState.IsKeyDown(Keys.D1))
+                inventory = 1;
+            if (currentKeyState.IsKeyDown(Keys.D2) && !previousKeyState.IsKeyDown(Keys.D2))
+                inventory = 2;
+            if (currentKeyState.IsKeyDown(Keys.D3) && !previousKeyState.IsKeyDown(Keys.D3))
+                inventory = 3;
+            if (currentKeyState.IsKeyDown(Keys.D4) && !previousKeyState.IsKeyDown(Keys.D4))
+                inventory = 4;
+            if (currentKeyState.IsKeyDown(Keys.D5) && !previousKeyState.IsKeyDown(Keys.D5))
+                inventory = 5;
+
+            if (currentMouseState.ScrollWheelValue != previousMouseState.ScrollWheelValue)
+            {
+                inventory = -1 * (currentMouseState.ScrollWheelValue / 120 % 4);
+                if (inventory < 0)
+                    inventory += 4;
+
+                Debug.WriteLine("Inventory: " + inventory);
             }
         }
         private void ApplyPhysics(float elapsed)
