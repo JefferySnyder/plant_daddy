@@ -20,6 +20,8 @@ namespace Project1
         public float Depth;
         public Vector2 Origin;
 
+        public float growthCountdown = 1f;
+
         public AnimatedTexture(Vector2 origin, float depth)
         {
             this.Origin = origin;
@@ -49,6 +51,11 @@ namespace Project1
 
         public void UpdateFrame(float elapsed, Vector2 pos)
         {
+            Position = pos;
+            UpdateFrame(elapsed);
+        }
+        public void UpdateFrame(float elapsed)
+        {
             if (isPaused) return;
             totalElapsed += elapsed;
             if (totalElapsed > timePerFrame)
@@ -58,7 +65,6 @@ namespace Project1
                 frame %= frameCount;
                 totalElapsed -= timePerFrame;
             }
-            Position = pos;
         }
 
         public void DrawFrame(SpriteBatch batch)
