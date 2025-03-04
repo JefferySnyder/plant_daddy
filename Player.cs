@@ -57,6 +57,7 @@ namespace Project1
         MouseState previousMouseState;
         public bool isSwinging;
         Rectangle initialSwingCollision;
+        public bool AlreadyBrokeSomthing;
 
         public void Initialize()
         {
@@ -134,6 +135,14 @@ namespace Project1
                 Xmovement = 1f;
                 characterDir = Facing.Right;
             }
+            //if (Math.Abs(Xmovement) + Math.Abs(Ymovement) == 2f)
+            //{
+            //    Xmovement -= Xmovement * 0.5f;
+            //    Ymovement -= Ymovement * 0.5f;
+            //}
+            if (Math.Abs(Xmovement) + Math.Abs(Ymovement) == 2f)
+                (Xmovement, Ymovement) = Vector2.Normalize(new Vector2(Xmovement, Ymovement));
+            Debug.WriteLine(Math.Abs(Xmovement) + Math.Abs(Ymovement));
 
             if (currentKeyState.IsKeyDown(Keys.Space) && !previousKeyState.IsKeyDown(Keys.Space))
             {
@@ -146,12 +155,15 @@ namespace Project1
             if (cooldowntime > 0.5)
             {
                 isSwinging = false;
+                playerSwing.Pause();
             }
             // Swing = J
             if (cooldowntime >= 0.5 && (currentKeyState.IsKeyDown(Keys.J) || currentMouseState.LeftButton == ButtonState.Pressed))
             {
                 isSwinging = true;
+                AlreadyBrokeSomthing = false;
                 playerSwing.Reset();
+                playerSwing.Play();
                 cooldowntime = 0;
                 initialSwingCollision = getSwingCollision();
             }

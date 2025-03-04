@@ -10,6 +10,9 @@
 - [x] Hydro Pot requires one water per growth cycle
 - [x] Inventory determines left click
 - [x] Inventory determined by scroll wheel
+- [ ] Object outlined in white before swinging at it
+- [ ] Object flashes white when hit
+
 - [ ] Plants grow slower if not watered
 - [ ] Full grown lettuce gives one extra point?
 - [ ] Each seed takes one point

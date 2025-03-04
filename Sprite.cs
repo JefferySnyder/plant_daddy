@@ -8,6 +8,7 @@ namespace Project1
     {
         public Texture2D Texture;
         public Vector2 Position;
+        public bool IsHighlighted = false;
         public bool IsAlive = true;
 
         public Sprite(Texture2D texture, Vector2 position)
