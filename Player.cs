@@ -49,15 +49,17 @@ namespace Project1
         private const int framesPerSec = 4;
 
         public int inventory = 0;
-        public int points = 0;
+        public int points = 1;
         float cooldowntime = 1;
         KeyboardState currentKeyState;
         KeyboardState previousKeyState;
         MouseState currentMouseState;
         MouseState previousMouseState;
-        public bool isSwinging;
+        public bool IsSwinging;
         Rectangle initialSwingCollision;
-        public bool AlreadyBrokeSomthing;
+        public bool AlreadyBrokeSomething;
+        public bool AlreadyPlacedSomething;
+        public bool IsCarryingItem;
 
         public void Initialize()
         {
@@ -112,37 +114,37 @@ namespace Project1
 
             previousMouseState = currentMouseState;
             currentMouseState = Mouse.GetState();
-            //Xmovement = 0f; Ymovement = 0f;
+            Xmovement = 0f; Ymovement = 0f;
 
             //if (kstate.IsKeyDown(Keys.Space))
             if (currentKeyState.IsKeyDown(Keys.Up) || currentKeyState.IsKeyDown(Keys.W))
             {
-                Ymovement = -1f;
+                Ymovement += -1f;
                 characterDir = Facing.Up;
             }
             if (currentKeyState.IsKeyDown(Keys.Down) || currentKeyState.IsKeyDown(Keys.S))
             {
-                Ymovement = 1f;
+                Ymovement += 1f;
                 characterDir = Facing.Down;
             }
             if (currentKeyState.IsKeyDown(Keys.Left) || currentKeyState.IsKeyDown(Keys.A))
             {
-                Xmovement = -1f;
+                Xmovement += -1f;
                 characterDir = Facing.Left;
             }
             if (currentKeyState.IsKeyDown(Keys.Right) || currentKeyState.IsKeyDown(Keys.D))
             {
-                Xmovement = 1f;
+                Xmovement += 1f;
                 characterDir = Facing.Right;
             }
-            //if (Math.Abs(Xmovement) + Math.Abs(Ymovement) == 2f)
-            //{
-            //    Xmovement -= Xmovement * 0.5f;
-            //    Ymovement -= Ymovement * 0.5f;
-            //}
             if (Math.Abs(Xmovement) + Math.Abs(Ymovement) == 2f)
-                (Xmovement, Ymovement) = Vector2.Normalize(new Vector2(Xmovement, Ymovement));
-            Debug.WriteLine(Math.Abs(Xmovement) + Math.Abs(Ymovement));
+            {
+                Xmovement -= Xmovement * 0.25f;
+                Ymovement -= Ymovement * 0.25f;
+            }
+            //if (Math.Abs(Xmovement) + Math.Abs(Ymovement) == 2f)
+            //    (Xmovement, Ymovement) = Vector2.Normalize(new Vector2(Xmovement, Ymovement));
+            //Debug.WriteLine(Math.Abs(Xmovement) + Math.Abs(Ymovement));
 
             if (currentKeyState.IsKeyDown(Keys.Space) && !previousKeyState.IsKeyDown(Keys.Space))
             {
@@ -154,29 +156,23 @@ namespace Project1
 
             if (cooldowntime > 0.5)
             {
-                isSwinging = false;
+                IsSwinging = false;
                 playerSwing.Pause();
             }
             // Swing = J
             if (cooldowntime >= 0.5 && (currentKeyState.IsKeyDown(Keys.J) || currentMouseState.LeftButton == ButtonState.Pressed))
             {
-                isSwinging = true;
-                AlreadyBrokeSomthing = false;
+                IsSwinging = true;
+                AlreadyBrokeSomething = false;
                 playerSwing.Reset();
                 playerSwing.Play();
                 cooldowntime = 0;
                 initialSwingCollision = getSwingCollision();
             }
-            if (currentKeyState.IsKeyDown(Keys.D1) && !previousKeyState.IsKeyDown(Keys.D1))
-                inventory = 1;
-            if (currentKeyState.IsKeyDown(Keys.D2) && !previousKeyState.IsKeyDown(Keys.D2))
-                inventory = 2;
-            if (currentKeyState.IsKeyDown(Keys.D3) && !previousKeyState.IsKeyDown(Keys.D3))
-                inventory = 3;
-            if (currentKeyState.IsKeyDown(Keys.D4) && !previousKeyState.IsKeyDown(Keys.D4))
-                inventory = 4;
-            if (currentKeyState.IsKeyDown(Keys.D5) && !previousKeyState.IsKeyDown(Keys.D5))
-                inventory = 5;
+            if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton != ButtonState.Pressed)
+            {
+                AlreadyPlacedSomething = false;
+            }
 
             if (currentMouseState.ScrollWheelValue != previousMouseState.ScrollWheelValue)
             {
@@ -184,7 +180,7 @@ namespace Project1
                 if (inventory < 0)
                     inventory += 4;
 
-                Debug.WriteLine("Inventory: " + inventory);
+                //Debug.WriteLine("Inventory: " + inventory);
             }
         }
         private void ApplyPhysics(float elapsed)
@@ -211,17 +207,18 @@ namespace Project1
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            if (isSwinging)
+            if (IsSwinging)
             {
                 playerSwing.DrawFrame(spriteBatch, characterDir);
                 if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
                 {
                     foreach (var ghost in ghosts)
                     {
-                        if (characterDir == Facing.Left || characterDir == Facing.Right)
-                            playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(20,18), characterDir + 4, Color.White * ghost.opacity);
-                        else
-                            playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(16,18), characterDir + 4, Color.White * ghost.opacity);
+                        playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(0, -4), characterDir + 4, Color.White * ghost.opacity);
+                        //if (characterDir == Facing.Left || characterDir == Facing.Right)
+                        //    playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(0,-4), characterDir + 4, Color.White * ghost.opacity);
+                        //else
+                        //    playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(16, 18), characterDir + 4, Color.White * ghost.opacity);
                         ghost.opacity -= 0.075f;
                     }
                 }
@@ -252,19 +249,41 @@ namespace Project1
         public Rectangle getSwingCollision()
         {
             // to get character center
+            //Vector2 centered = playerIdle.Position + new Vector2(8, 4);
+            Vector2 centered = playerIdle.Position;
+            if (characterDir == Facing.Down)
+                centered += new Vector2(0, 16);
+            if (characterDir == Facing.Left)
+                centered -= new Vector2(16, 0);
+            //if (characterDir == Facing.Up)
+            //    centered -= new Vector2(0, 16);
+            if (characterDir == Facing.Right)
+                centered += new Vector2(16, 0);
+
+            int gridX = ((int)centered.X / 16) * 16;
+            int gridY = ((int)centered.Y / 16) * 16;
+            return new Rectangle(gridX, gridY, 32, 32);
+        }
+        public Rectangle getPlacementCollision()
+        {
+            // to get character center
             Vector2 centered = playerIdle.Position + new Vector2(8, 4);
             if (characterDir == Facing.Down)
                 centered += new Vector2(0, 16);
             if (characterDir == Facing.Left)
                 centered -= new Vector2(16, 0);
-            if (characterDir == Facing.Up)
-                centered -= new Vector2(0, 16);
+            //if (characterDir == Facing.Up)
+            //    centered -= new Vector2(0, 16);
             if (characterDir == Facing.Right)
                 centered += new Vector2(16, 0);
 
             int gridX = ((int)centered.X / 16) * 16;
             int gridY = ((int)centered.Y / 16) * 16;
             return new Rectangle(gridX, gridY, 16, 16);
+        }
+        public Vector2 GetVelocity()
+        {
+            return velocity;
         }
     }
 }

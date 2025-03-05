@@ -31,7 +31,8 @@ namespace Project1
         {
             foreach (var i in items)
             {
-                if (playerSwingCollision.Location == i.Rect().Location)
+                //if (playerSwingCollision.Location == i.Rect().Location && !i.IsBeingCarried)
+                if (playerSwingCollision.Intersects(i.Rect()) && !i.IsBeingCarried)
                 {
                     i.DrawFrame(spriteBatch, Facing.Down + 1);
                     i.IsHighlighted = true;
@@ -53,14 +54,15 @@ namespace Project1
                     if (i.Rect().Location == m.Rect().Location)
                         itemOnTop = true;
                 }
-                if (playerSwingCollision.Location == i.Rect().Location && !itemOnTop)
+                //if (playerSwingCollision.Location == i.Rect().Location && !itemOnTop && !i.IsBeingCarried)
+                if (playerSwingCollision.Intersects(i.Rect()) && !itemOnTop && !i.IsBeingCarried)
                 {
-                    i.DrawFrame(spriteBatch, Facing.Down + 1);
+                    i.DrawFrame(spriteBatch, i.Position, Facing.Down + 1);
                     i.IsHighlighted = true;
                 }
                 else
                 {
-                    i.DrawFrame(spriteBatch);
+                    i.DrawFrame(spriteBatch, i.Position);
                     i.IsHighlighted = false;
                 }
             }

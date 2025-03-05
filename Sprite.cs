@@ -10,6 +10,9 @@ namespace Project1
         public Vector2 Position;
         public bool IsHighlighted = false;
         public bool IsAlive = true;
+        public bool IsBeingCarried = false;
+
+        public int AtlasRow = 0;
 
         public Sprite(Texture2D texture, Vector2 position)
         {
