@@ -59,7 +59,8 @@ namespace Project1
         Rectangle initialSwingCollision;
         public bool AlreadyBrokeSomething;
         public bool AlreadyPlacedSomething;
-        public bool IsCarryingItem;
+        public bool IsHoldingWater;
+        public AnimatedTexture CarriedItem;
 
         public void Initialize()
         {
@@ -250,20 +251,43 @@ namespace Project1
         {
             // to get character center
             //Vector2 centered = playerIdle.Position + new Vector2(8, 4);
-            Vector2 centered = playerIdle.Position;
-            if (characterDir == Facing.Down)
-                centered += new Vector2(0, 16);
-            if (characterDir == Facing.Left)
-                centered -= new Vector2(16, 0);
-            if (characterDir == Facing.Up)
-                centered -= new Vector2(0, 8);
-            if (characterDir == Facing.Right)
-                centered += new Vector2(16, 0);
+            Point centered = playerIdle.Rect().Center;
+            Point playerPos = centered;
+            Point mousePos = currentMouseState.Position;
 
-            //int gridX = ((int)centered.X / 16) * 16;
-            //int gridY = ((int)centered.Y / 16) * 16;
-            int gridX = (int)centered.X;
-            int gridY = (int)centered.Y;
+            var screen = new Vector2(Game1.screenWidth, Game1.screenHeight);
+            var game = new Vector2(Game1.gameWidth, Game1.gameHeight);
+            var res = screen / game;
+            //var res = new Vector2(4f, 4f);
+            mousePos.X /= (int)res.X;
+            mousePos.Y /= (int)res.Y;
+
+            //Debug.WriteLine(res);
+            //Debug.WriteLine("centered: " + centered); // 208, 120i
+            Debug.WriteLine("mousePos: " + mousePos); // 745, 434
+
+            if (mousePos.Y > playerPos.Y) // Up
+                centered += new Point(0, 16);
+            if (mousePos.Y < playerPos.Y) // Down
+                centered -= new Point(0, 16);
+            if (mousePos.X < playerPos.X) // Left
+                centered -= new Point(16, 0);
+            if (mousePos.X > playerPos.X) // Right
+                centered += new Point(16, 0);
+
+            //if (characterDir == Facing.Down)
+            //    centered += new Vector2(0, 16);
+            //if (characterDir == Facing.Left)
+            //    centered -= new Vector2(16, 0);
+            //if (characterDir == Facing.Up)
+            //    centered -= new Vector2(0, 8);
+            //if (characterDir == Facing.Right)
+            //    centered += new Vector2(16, 0);
+
+            int gridX = ((int)centered.X / 16) * 16;
+            int gridY = ((int)centered.Y / 16) * 16;
+            //int gridX = (int)centered.X;
+            //int gridY = (int)centered.Y;
             return new Rectangle(gridX, gridY, 16, 16);
         }
         public Vector2 GetVelocity()
