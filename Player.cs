@@ -49,7 +49,7 @@ namespace Project1
         private const int framesPerSec = 4;
 
         public int inventory = 0;
-        public int points = 1;
+        public int points = 10;
         float cooldowntime = 1;
         KeyboardState currentKeyState;
         KeyboardState previousKeyState;
@@ -255,30 +255,15 @@ namespace Project1
                 centered += new Vector2(0, 16);
             if (characterDir == Facing.Left)
                 centered -= new Vector2(16, 0);
-            //if (characterDir == Facing.Up)
-            //    centered -= new Vector2(0, 16);
+            if (characterDir == Facing.Up)
+                centered -= new Vector2(0, 8);
             if (characterDir == Facing.Right)
                 centered += new Vector2(16, 0);
 
-            int gridX = ((int)centered.X / 16) * 16;
-            int gridY = ((int)centered.Y / 16) * 16;
-            return new Rectangle(gridX, gridY, 32, 32);
-        }
-        public Rectangle getPlacementCollision()
-        {
-            // to get character center
-            Vector2 centered = playerIdle.Position + new Vector2(8, 4);
-            if (characterDir == Facing.Down)
-                centered += new Vector2(0, 16);
-            if (characterDir == Facing.Left)
-                centered -= new Vector2(16, 0);
-            //if (characterDir == Facing.Up)
-            //    centered -= new Vector2(0, 16);
-            if (characterDir == Facing.Right)
-                centered += new Vector2(16, 0);
-
-            int gridX = ((int)centered.X / 16) * 16;
-            int gridY = ((int)centered.Y / 16) * 16;
+            //int gridX = ((int)centered.X / 16) * 16;
+            //int gridY = ((int)centered.Y / 16) * 16;
+            int gridX = (int)centered.X;
+            int gridY = (int)centered.Y;
             return new Rectangle(gridX, gridY, 16, 16);
         }
         public Vector2 GetVelocity()

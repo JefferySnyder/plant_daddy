@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Project1
 {
@@ -125,7 +126,6 @@ namespace Project1
             player.Update(gameTime);
 
             lettuce.Update(gameTime, soilPot);
-            lettuce.Update(gameTime, hydroPot);
 
             ItemBreakingConditions(lettuce.lettuce, true);
             //ItemBreakingConditions(soilPot);
@@ -134,39 +134,35 @@ namespace Project1
             ItemCarryLogic(gameTime, soilPot.items);
             ItemCarryLogic(gameTime, waterCan.items);
 
+            soilPot.HighlightingLogic(lettuce, player);
+            waterCan.HighlightingLogic(lettuce, player);
+
             if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton != ButtonState.Pressed)
             {
-                bool occupied = false;
-                foreach (var lettuce in lettuce.lettuce.items)
-                {
-                    if (lettuce.Rect().Location == player.getPlacementCollision().Location)
-                        occupied = true;
-                }
-                bool valid = false;
+                AnimatedTexture highlightedPot = null;
                 foreach (var pot in soilPot.items)
                 {
-                    if (pot.Rect().Location == player.getPlacementCollision().Location)
-                    {
-                        valid = true;
-                    }
+                    if (pot.IsHighlighted)
+                        highlightedPot = pot;
                 }
                 if (waterCan.items[0].IsBeingCarried)
                 {
                     foreach (var pot in soilPot.items)
                     {
-                        if (pot.Rect().Location == player.getPlacementCollision().Location)
+                        if (pot.Rect().Intersects(player.getSwingCollision()))
                         {
                             pot.NextFrame();
                             isPouring = true;
                         }
                     }
                 }
-                else if (!occupied && valid && !player.AlreadyPlacedSomething && player.points > 0)
+                else if (highlightedPot != null && !player.AlreadyPlacedSomething && player.points > 0)
                 {
                     AnimatedTexture tempAT = new AnimatedTexture(Vector2.Zero, 0.5f);
                     tempAT.LoadWithoutContent(lettuce.lettuce.texture, 5, 5, 2);
-                    tempAT.Position = new Vector2(player.getPlacementCollision().Location.X,
-                                                  player.getPlacementCollision().Location.Y);
+                    //tempAT.Position = new Vector2(player.getSwingCollision().Location.X,
+                    //                              player.getSwingCollision().Location.Y);
+                    tempAT.Position = new Vector2(highlightedPot.Position.X, highlightedPot.Position.Y);
                     lettuce.lettuce.items.Add(tempAT);
                     player.points--;
                 }
@@ -219,7 +215,7 @@ namespace Project1
                     bool occupied = false;
                     foreach (var pot in soilPot.items)
                     {
-                        if (pot.Rect().Location == player.getPlacementCollision().Location)
+                        if (pot.Rect().Intersects(player.getSwingCollision()))
                         {
                             occupied = true;
                         }
@@ -228,7 +224,7 @@ namespace Project1
                     {
                         player.IsCarryingItem = false;
                         item.IsBeingCarried = false;
-                        item.UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, new Vector2(player.getPlacementCollision().Location.X, player.getPlacementCollision().Location.Y));
+                        item.UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, new Vector2(player.getSwingCollision().Location.X, player.getSwingCollision().Location.Y));
                         player.AlreadyPlacedSomething = true;
                     }
                 }
@@ -275,11 +271,9 @@ namespace Project1
             //}
             //if (player.IsSwinging)
             _spriteBatch.Draw(_texture, player.getSwingCollision(), Color.White);
-            _spriteBatch.Draw(_texture, player.getPlacementCollision(), Color.Black);
-            soilPot.Draw(_spriteBatch, player.getSwingCollision(), lettuce.lettuce);
-            hydroPot.Draw(_spriteBatch, player.getSwingCollision(), lettuce.lettuce);
-            lettuce.lettuce.Draw(_spriteBatch, player.getSwingCollision());
-            waterCan.Draw(_spriteBatch, player.getSwingCollision());
+            soilPot.Draw(_spriteBatch);
+            lettuce.lettuce.Draw(_spriteBatch);
+            waterCan.Draw(_spriteBatch);
             player.Draw(_spriteBatch);
 
             string output = player.points.ToString();
