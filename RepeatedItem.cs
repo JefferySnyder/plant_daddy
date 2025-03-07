@@ -96,58 +96,6 @@ namespace Project1
                 }
             }
         }
-        public void ItemCarryLogic(GameTime gameTime, RepeatedItem sharedSpace, Player player, MouseState currentMouseState, MouseState previousMouseState)
-        {
-            foreach (AnimatedTexture item in items) {
-                if (item.IsHighlighted && player.playerSwing.GetFrame() == 4 && !player.AlreadyBrokeSomething && player.CarriedItem == null)
-                {
-                    //soilPot.items.RemoveAt(i);
-                    player.CarriedItem = item;
-                    item.IsBeingCarried = true;
-                    player.AlreadyBrokeSomething = true;
-                    //end--;
-                }
-                if (item.IsBeingCarried)
-                {
-                    //var playerAnimation = player.GetVelocity() == Vector2.Zero ? player.playerIdle : player.playerWalk;
-                    bool IsWalking = player.GetVelocity() == Vector2.Zero ? false : true;
-                    int yOffset = 0;
-                    if (player.IsSwinging)
-                    {
-                        if (player.playerSwing.GetFrame() == 0) yOffset = 1;
-                        if (player.playerSwing.GetFrame() == 1) yOffset = -4;
-                        if (player.playerSwing.GetFrame() == 2) yOffset = -4;
-                        if (player.playerSwing.GetFrame() == 3) yOffset = -3;
-                        if (player.playerSwing.GetFrame() == 4) yOffset = -8;
-                        if (player.playerSwing.GetFrame() == 5) yOffset = -8;
-                        if (player.playerSwing.GetFrame() == 6) yOffset = -3;
-                    }
-                    else
-                    {
-                        if (!IsWalking && player.playerIdle.GetFrame() == 1) yOffset = 1;
-                        if (!IsWalking && player.playerIdle.GetFrame() == 2) yOffset = -1;
-                        if (!IsWalking && player.playerIdle.GetFrame() == 3) yOffset = -1;
-                        if (IsWalking && player.playerWalk.GetFrame() == 1) yOffset = 1;
-                        if (IsWalking && player.playerWalk.GetFrame() == 3) yOffset = -1;
-                        if (IsWalking && player.playerWalk.GetFrame() == 5) yOffset = 1;
-                        if (IsWalking && player.playerWalk.GetFrame() == 7) yOffset = -1;
-                    }
-                    item.UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, player.characterPos + new Vector2(0, -16 + yOffset ));
-
-                    bool occupied = false;
-                    foreach (var pot in items)
-                        if (pot.IsHighlighted || sharedSpace.items.Any(x => x.IsHighlighted))
-                            occupied = true;
-                    if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton != ButtonState.Pressed && !occupied)
-                    {
-                        player.CarriedItem = null;
-                        item.IsBeingCarried = false;
-                        item.UpdateFrame((float)gameTime.ElapsedGameTime.TotalSeconds, new Vector2(player.getSwingCollision().Location.X, player.getSwingCollision().Location.Y));
-                        player.AlreadyPlacedSomething = true;
-                    }
-                }
-            }
-        }
         public void Draw(SpriteBatch spriteBatch)
         {
             foreach (var i in items)

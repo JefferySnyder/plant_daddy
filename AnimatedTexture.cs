@@ -11,6 +11,7 @@ namespace Project1
     {
         private int frameCount;
         private int frameRows;
+        public int AtlasRow = 0;
         //private Texture2D myTexture;
         private float timePerFrame;
         private int frame;
@@ -93,7 +94,7 @@ namespace Project1
         {
             int FrameWidth = Texture.Width / frameCount;
             int FrameHeight = Texture.Height / frameRows;
-            Rectangle sourcerect = new (FrameWidth * frame, FrameHeight * (int)dir,
+            Rectangle sourcerect = new (FrameWidth * frame, FrameHeight * ((int)dir + (AtlasRow * 2)),
                 FrameWidth, FrameHeight);
 
             batch.Draw(Texture, screenPos, sourcerect, color,

@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -11,12 +12,13 @@ namespace Project1
 {
     public class Game1 : Game
     {
-        bool showDebugBox = true;
+        bool showDebugBox = false;
 
         Player player;
         RepeatedItem lettuce;
         RepeatedItem soilPot;
         RepeatedItem waterCan;
+        bool validToPlace = true;
 
         List<RepeatedItem> repeatedItems;
 
@@ -86,12 +88,13 @@ namespace Project1
             player.Load(Content);
             map.Load(Content, "ground-tiles");
             lettuce.Load(Content, "Lettuce_Growth", 5, 0, 2);
-            soilPot.Load(Content, "Soil_Pot", 2, 0, 2);
+            soilPot.Load(Content, "Soil_Pot", 2, 0, 4);
             for (int i = 1; i < 5; i++)
             {
                 var pos = new Vector2(gameWidth / 4 / 16 * 16, gameHeight / i / 2 / 16 * 16);
                 soilPot.AddNewItem(pos);
             }
+            soilPot.items[1].AtlasRow = 1;
             waterCan.Load(Content, "Water_Can", 2, 0, 3);
             var canPos = new Vector2(gameWidth / 2 / 16 * 16, gameHeight / 2 / 16 * 16);
             waterCan.AddNewItem(canPos);
@@ -119,11 +122,11 @@ namespace Project1
             // TODO: Add your update logic here
             player.Update(gameTime);
 
+            LettuceHighlightingLogic(lettuce);
             if (player.IsHoldingWater)
                 WaterCanViewHighlightingLogic();
             else
-                HighlightingLogic();
-            LettuceHighlightingLogic(lettuce);
+                HighlightingLogic((float)gameTime.TotalGameTime.TotalSeconds);
 
             PotCarryLogic(soilPot, elapsed);
             WaterCanCarryLogic(waterCan, elapsed);
@@ -135,7 +138,7 @@ namespace Project1
         }
         private void LettuceBreakingLogic(RepeatedItem lettuce)
         {
-            if (player.IsSwinging && player.playerSwing.GetFrame() == 4 && !player.AlreadyBrokeSomething)
+            if (player.playerSwing.GetFrame() == 4 && !player.AlreadyBrokeSomething)
             {
                 int end = lettuce.items.Count;
                 for (int i = 0; i < end; i++) 
@@ -154,9 +157,9 @@ namespace Project1
         private void WaterCanCarryLogic(RepeatedItem items, float elapsed)
         {
             foreach (AnimatedTexture item in items.items) {
-                if (item.IsHighlighted && player.playerSwing.GetFrame() == 4 && !player.AlreadyBrokeSomething && player.CarriedItem == null)
+                if (item.IsHighlighted && player.playerSwing.GetFrame() == 4 && !player.AlreadyBrokeSomething && player.CarriedItems.Count == 0 && !lettuce.items.Any(x => x.IsHighlighted))
                 {
-                    player.CarriedItem = item;
+                    player.CarriedItems.Add(item);
                     item.IsBeingCarried = true;
                     player.AlreadyBrokeSomething = true;
                     if (item.Texture == waterCan.texture)
@@ -190,17 +193,20 @@ namespace Project1
 
                     AnimatedTexture occupyingItem = null;
                     string assetName = "";
-                    bool validToPlace = true;
+                    validToPlace = true;
                     foreach (var repeatedItem in repeatedItems)
                     {
+                        if (repeatedItem.asset == "Lettuce_Growth")
+                            continue;
                         foreach (var rItem in repeatedItem.items)
                         {
                             if (rItem.IsHighlighted)
                             {
                                 assetName = repeatedItem.asset;
                                 occupyingItem = rItem;
+                                validToPlace = false;
                             }
-                            else if (rItem.Rect().Intersects(player.getSwingCollision()))
+                            else if (rItem.Rect().Intersects(player.getPlacementCollision()) && repeatedItem.asset != "Water_Can")
                             {
                                 validToPlace = false;
                             }
@@ -212,9 +218,9 @@ namespace Project1
                         {
                             if (occupyingItem == null && validToPlace)
                             {
-                                player.CarriedItem = null;
+                                player.CarriedItems.Remove(item);
                                 item.IsBeingCarried = false;
-                                item.UpdateFrame(elapsed, new Vector2(player.getSwingCollision().Location.X, player.getSwingCollision().Location.Y));
+                                item.UpdateFrame(elapsed, new Vector2(player.getPlacementCollision().Location.X, player.getPlacementCollision().Location.Y));
                                 player.AlreadyPlacedSomething = true;
                                 player.IsHoldingWater = false;
                             }
@@ -246,9 +252,9 @@ namespace Project1
         private void PotCarryLogic(RepeatedItem items, float elapsed)
         {
             foreach (AnimatedTexture item in items.items) {
-                if (item.IsHighlighted && player.playerSwing.GetFrame() == 4 && !player.AlreadyBrokeSomething && player.CarriedItem == null)
+                if (item.IsHighlighted && player.playerSwing.GetFrame() == 4 && !player.AlreadyBrokeSomething && player.CarriedItems.Count == 0 && !lettuce.items.Any(x => x.IsHighlighted))
                 {
-                    player.CarriedItem = item;
+                    player.CarriedItems.Add(item);
                     item.IsBeingCarried = true;
                     player.AlreadyBrokeSomething = true;
                 }
@@ -279,21 +285,31 @@ namespace Project1
                     item.UpdateFrame(elapsed, player.characterPos + new Vector2(0, -16 + yOffset ));
 
                     AnimatedTexture occupyingItem = null;
+                    validToPlace = true;
                     foreach (var repeatedItem in repeatedItems)
                     {
+                        if (repeatedItem.asset == "Lettuce_Growth")
+                            continue;
                         foreach (var rItem in repeatedItem.items)
                         {
                             if (rItem.IsHighlighted)
+                            {
                                 occupyingItem = rItem;
+                                validToPlace = false;
+                            }
+                            else if (rItem.Rect().Intersects(player.getPlacementCollision()) && repeatedItem.asset != "Soil_Pot")
+                            {
+                                validToPlace = false;
+                            }
                         }
                     }
                     if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton != ButtonState.Pressed)
                     {
-                        if (occupyingItem == null)
+                        if (occupyingItem == null && validToPlace)
                         {
-                            player.CarriedItem = null;
+                            player.CarriedItems.Remove(item);
                             item.IsBeingCarried = false;
-                            item.UpdateFrame(elapsed, new Vector2(player.getSwingCollision().Location.X, player.getSwingCollision().Location.Y));
+                            item.UpdateFrame(elapsed, new Vector2(player.getPlacementCollision().Location.X, player.getPlacementCollision().Location.Y));
                             player.AlreadyPlacedSomething = true;
                         }
                     }
@@ -321,9 +337,7 @@ namespace Project1
             foreach (var item in objects.items)
             {
                 item.IsHighlighted = false;
-                if (item.Rect().Intersects(player.getSwingCollision()) &&
-                    //!lettuce.items.Any(x => x.Rect().Location == item.Rect().Location) &&
-                    !item.IsBeingCarried)
+                if (item.Rect().Intersects(player.getSwingCollision()))
                 {
                     if (closest == null)
                     {
@@ -333,8 +347,7 @@ namespace Project1
                     {
                         var result = player.getSwingCollision().Center - closest.Rect().Center;
                         var result2 = player.getSwingCollision().Center - item.Rect().Center;
-                        //Debug.WriteLine("result2: " + Math.Abs(result2.X + result2.Y));
-                        //Debug.WriteLine("result: " + Math.Abs(result.X + result.Y));
+
                         if (Math.Abs(result2.X) + Math.Abs(result2.Y) < Math.Abs(result.X) + Math.Abs(result.Y))
                         {
                             closest.IsHighlighted = false;
@@ -346,17 +359,24 @@ namespace Project1
             }
         }
         //private void PotHighlightingLogic(RepeatedItem objects)
-        private void HighlightingLogic()
+        private void HighlightingLogic(float elapsed)
         {
             AnimatedTexture closest = null;
             foreach (var repeatedItem in repeatedItems)
             {
+                if (repeatedItem.asset == "Lettuce_Growth")
+                    continue;
                 foreach (var item in repeatedItem.items)
                 {
-                    item.IsHighlighted = false;
-                    if (item.Rect().Intersects(player.getSwingCollision()) &&
-                        !lettuce.items.Any(x => x.Rect().Location == item.Rect().Location) &&
-                        !item.IsBeingCarried)
+                    item.IsHighlighted = false;                                                 // Only highlights if
+                    if (item.Rect().Intersects(player.getSwingCollision()) &&                   // in swing radius
+                        !lettuce.items.Any(x => x.Rect().Location == item.Rect().Location) &&   // no lettuce is on it
+                        //!item.IsBeingCarried)
+                        !(item.Texture != soilPot.texture &&                                    // is not pot and no lettuce is highlighted
+                            //lettuce.items.Any(x => x.Rect().Intersects(player.getSwingCollision()))) &&
+                            lettuce.items.Any(x => x.IsHighlighted)) &&
+                        !player.CarriedItems.Any(x => x.Texture != item.Texture) &&             // its the same texture as held item
+                        !player.CarriedItems.Contains(item))                                    // its not being held
                     {
                         if (closest == null)
                         {
@@ -386,11 +406,12 @@ namespace Project1
                     continue;
                 foreach (var item in repeatedItem.items)
                 {
-                    item.IsHighlighted = false;
-                    if (item.Rect().Intersects(player.getSwingCollision()) &&
+                    item.IsHighlighted = false;                                                                         // Only highlight if
+                    if (item.Rect().Intersects(player.getSwingCollision()) &&                                           // in swing radius
                         //!lettuce.items.Any(x => x.Rect().Location == item.Rect().Location) &&
-                        !soilPot.items.Any(x => x.Rect().Location == item.Rect().Location && x.GetFrame() == 1) &&
-                        !item.IsBeingCarried)
+                        soilPot.items.Any(x => x.Rect().Location == item.Rect().Location && x.GetFrame() != 1) &&       // is unwatered pot
+                        !lettuce.items.Any(x => x.Rect().Location == item.Rect().Location && x.GetFrame() == 4) &&      // lettuce is not fully grown
+                        !player.CarriedItems.Contains(item))                                                            // is not being held
                     {
                         if (closest == null)
                             closest = item;
@@ -458,6 +479,9 @@ namespace Project1
             //}
             //if (player.IsSwinging)
             _spriteBatch.Draw(_texture, player.getSwingCollision(), Color.White);
+            Point location = player.getPlacementCollision().Location;
+            if (player.CarriedItems.Count != 0 && validToPlace)
+                player.CarriedItems[0].DrawFrame(_spriteBatch, new Vector2(location.X, location.Y), Facing.Down, Color.White * 0.3f);
             soilPot.Draw(_spriteBatch);
             lettuce.Draw(_spriteBatch);
             waterCan.Draw(_spriteBatch);

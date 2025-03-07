@@ -23,15 +23,15 @@
 - [x] Each seed takes one point
 - [x] Add points to screen
 - [x] Add Watering can
-- [ ] More generous player swing box
-- [ ] Only highlight object that player will pick up / Next closest item
-- [ ] Change Repeated Items Draws to Updates where applicable
+- [x] Prioritize breaking lettuce?
+- [x] More generous player swing box
+- [x] Only highlight object that player will pick up / Next closest item
+- [x] Change Repeated Items Draws to Updates where applicable
 - [ ] Water can empties on use / Refills on set down
 - [ ] Water can changes position on pour
-- [ ] Be able to hold multiple of the same object
-- [ ] Object flashes white when hit
 
 #### For later
+- [ ] Object flashes white when hit?
 - [ ] Player's hands disappear when object is being carried
 - [ ] Can stack items on pick-up (shown with number, somehow)
 - [ ] Shop to buy/sell items (Lettuce lovers Greenhouse Marketplace (LlGMa))
