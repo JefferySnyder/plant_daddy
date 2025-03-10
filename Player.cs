@@ -95,22 +95,25 @@ namespace Project1
             addGhostCooldown += elapsed;
             if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
             {
-                if (Math.Abs(characterPos.X - preDashPos.X) >= 12) 
+                if (Math.Abs(characterPos.X - preDashPos.X) >= 12 || Math.Abs(characterPos.Y - preDashPos.Y) >= 12)
                 {
                     ghosts.Add(new Ghost(characterPos, 0.5f, characterDir + 4));
                     preDashPos = characterPos;
                 }
-                //if (addGhostCooldown >= 0.025f)
-                //{
-                //    ghosts.Add(new Ghost(characterPos, 0.5f, characterDir + 4));
-                //    addGhostCooldown = 0;
-                //}
             }
             else
             {
                 preDashPos = characterPos;
-                if (ghosts != null && ghosts.Count > 0 && ghosts[0].opacity <= 0f)
-                    ghosts.Clear();
+            }
+            int end = ghosts.Count;
+            for (int i = 0; i < end; i++)
+            {
+                var ghost = ghosts[i];
+                if (ghost.opacity <= 0)
+                {
+                    ghosts.Remove(ghost);
+                    end--;
+                }
             }
 
             playerIdle.UpdateFrame(elapsed, characterPos);

@@ -7,6 +7,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Project1
 {
@@ -17,6 +18,7 @@ namespace Project1
         Player player;
         RepeatedItem lettuce;
         RepeatedItem soilPot;
+        RepeatedItem trayPot;
         RepeatedItem waterCan;
         bool validToPlace = true;
 
@@ -70,10 +72,12 @@ namespace Project1
             lettuce.Initialize();
             soilPot = new RepeatedItem();
             soilPot.Initialize();
+            trayPot = new RepeatedItem();
+            trayPot.Initialize();
             waterCan = new RepeatedItem();
             waterCan.Initialize();
 
-            repeatedItems = new List<RepeatedItem> { lettuce, soilPot, waterCan };
+            repeatedItems = new List<RepeatedItem> { lettuce, soilPot, trayPot, waterCan };
 
             renderTarget = new RenderTarget2D(GraphicsDevice, gameWidth, gameHeight);
             graphicsDevice = GraphicsDevice;
@@ -95,6 +99,12 @@ namespace Project1
                 soilPot.AddNewItem(pos);
             }
             soilPot.items[1].AtlasRow = 1;
+            trayPot.Load(Content, "Tray_Pot", 7, 0, 2);
+            for (int i = 1; i < 5; i++)
+            {
+                var pos = new Vector2(gameWidth / 4 / 16 * 16, 128 + 16 * i);
+                trayPot.AddNewItem(pos);
+            }
             waterCan.Load(Content, "Water_Can", 2, 0, 3);
             var canPos = new Vector2(gameWidth / 2 / 16 * 16, gameHeight / 2 / 16 * 16);
             waterCan.AddNewItem(canPos);
@@ -129,12 +139,41 @@ namespace Project1
                 HighlightingLogic((float)gameTime.TotalGameTime.TotalSeconds);
 
             PotCarryLogic(soilPot, elapsed);
+            PotCarryLogic(trayPot, elapsed);
             WaterCanCarryLogic(waterCan, elapsed);
 
-            LettucePlacementLogic(lettuce);
+            TrayConnectLogic(trayPot);
+
+            LettucePlacementLogic(lettuce, soilPot);
+            LettucePlacementLogic(lettuce, trayPot);
             LettuceGrowthLogic(lettuce, elapsed);
             LettuceBreakingLogic(lettuce);
 
+        }
+        private void TrayConnectLogic(RepeatedItem trays)
+        {
+            foreach (var item in trays.items)
+            {
+                var below = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == item.Position);
+                var above = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == item.Position);
+                var left = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == item.Position);
+                var right = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == item.Position);
+
+                if (below != null && above != null && new List<int> { 0,1,2,3 }.Any(x => x == below.GetFrame()) && new List<int> { 0,1,2,3 }.Any(x => x == above.GetFrame()) && new List<int> { 0,1,2,3 }.Any(x => x == item.GetFrame()))
+                    item.SetFrame(3);
+                else if (below != null && new List<int> { 0,1,2,3 }.Any(x => x == below.GetFrame()) && new List<int> { 0,1,2,3 }.Any(x => x == item.GetFrame()))
+                    item.SetFrame(1);
+                else if (above != null && new List<int> { 0,1,2,3 }.Any(x => x == above.GetFrame()) && new List<int> { 0,1,2,3 }.Any(x => x == item.GetFrame()))
+                    item.SetFrame(2);
+                else if (left != null && right != null && new List<int> { 0,4,5,6 }.Any(x => x == left.GetFrame()) && new List<int> { 0,4,5,6 }.Any(x => x == right.GetFrame()) && new List<int> { 0,4,5,6 }.Any(x => x == item.GetFrame()))
+                    item.SetFrame(6);
+                else if (left != null && new List<int> { 0,4,5,6 }.Any(x => x == left.GetFrame()) && new List<int> { 0,4,5,6 }.Any(x => x == item.GetFrame()))
+                    item.SetFrame(4);
+                else if (right != null && new List<int> { 0,4,5,6 }.Any(x => x == right.GetFrame()) && new List<int> { 0,4,5,6 }.Any(x => x == item.GetFrame()))
+                    item.SetFrame(5);
+                else
+                    item.SetFrame(0);
+            }
         }
         private void LettuceBreakingLogic(RepeatedItem lettuce)
         {
@@ -297,7 +336,7 @@ namespace Project1
                                 occupyingItem = rItem;
                                 validToPlace = false;
                             }
-                            else if (rItem.Rect().Intersects(player.getPlacementCollision()) && repeatedItem.asset != "Soil_Pot")
+                            else if (rItem.Rect().Intersects(player.getPlacementCollision()) && repeatedItem.asset != items.asset)
                             {
                                 validToPlace = false;
                             }
@@ -316,11 +355,11 @@ namespace Project1
                 }
             }
         }
-        private void LettucePlacementLogic(RepeatedItem objects)
+        private void LettucePlacementLogic(RepeatedItem objects, RepeatedItem pots)
         {
             if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton != ButtonState.Pressed)
             {
-                foreach (var pot in soilPot.items)
+                foreach (var pot in pots.items)
                 {
                     if (pot.IsHighlighted && player.points > 0 && !player.AlreadyPlacedSomething && !player.IsHoldingWater)
                     {
@@ -372,9 +411,8 @@ namespace Project1
                     if (item.Rect().Intersects(player.getSwingCollision()) &&                   // in swing radius
                         !lettuce.items.Any(x => x.Rect().Location == item.Rect().Location) &&   // no lettuce is on it
                         //!item.IsBeingCarried)
-                        !(item.Texture != soilPot.texture &&                                    // is not pot and no lettuce is highlighted
-                            //lettuce.items.Any(x => x.Rect().Intersects(player.getSwingCollision()))) &&
-                            lettuce.items.Any(x => x.IsHighlighted)) &&
+                        !((item.Texture != soilPot.texture && item.Texture != trayPot.texture) &&// is not pot or tray
+                            lettuce.items.Any(x => x.IsHighlighted)) &&                         // and no lettuce is highlighted
                         !player.CarriedItems.Any(x => x.Texture != item.Texture) &&             // its the same texture as held item
                         !player.CarriedItems.Contains(item))                                    // its not being held
                     {
@@ -406,10 +444,12 @@ namespace Project1
                     continue;
                 foreach (var item in repeatedItem.items)
                 {
+
                     item.IsHighlighted = false;                                                                         // Only highlight if
                     if (item.Rect().Intersects(player.getSwingCollision()) &&                                           // in swing radius
                         //!lettuce.items.Any(x => x.Rect().Location == item.Rect().Location) &&
-                        soilPot.items.Any(x => x.Rect().Location == item.Rect().Location && x.GetFrame() != 1) &&       // is unwatered pot
+                        (soilPot.items.Any(x => x.Rect().Location == item.Rect().Location && x.GetFrame() != 1) ||      // is unwatered pot
+                        trayPot.items.Any(x => x.Rect().Location == item.Rect().Location)) &&                           // is tray
                         !lettuce.items.Any(x => x.Rect().Location == item.Rect().Location && x.GetFrame() == 4) &&      // lettuce is not fully grown
                         !player.CarriedItems.Contains(item))                                                            // is not being held
                     {
@@ -456,7 +496,73 @@ namespace Project1
                         }
                     }
                 }
+                foreach (var tray in trayPot.items)
+                {
+                    if (tray.Rect().Location == item.Rect().Location && IsConnectedToWater(tray, new List<Vector2>()))
+                    {
+                        item.growthCountdown -= elapsed;
+                        if (item.growthCountdown <= 0)
+                        {
+                            item.NextFrame();
+                            item.growthCountdown = 1f;
+                        }
+                    }
+                }
             }
+        }
+        private bool IsConnectedToWater(AnimatedTexture tray, List<Vector2> marked)
+        {
+            if (tray == null) return false;
+            if (marked.Contains(tray.Position)) return false;
+            marked.Add(tray.Position);
+            if (tray.Texture == waterCan.texture) return true;
+
+            var below = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == tray.Position);
+            var above = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == tray.Position);
+            var left = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == tray.Position);
+            var right = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == tray.Position);
+
+            if (below == null) below = waterCan.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == tray.Position);
+            if (above == null) above = waterCan.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == tray.Position);
+            if (left == null) left = waterCan.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == tray.Position);
+            if (right == null) right = waterCan.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == tray.Position);
+
+            //if (tray.GetFrame() == 0 && (above != null || below != null || left != null || right != null))
+            //{
+            //    if (above.Texture == waterCan.texture || below.Texture == waterCan.texture || left.Texture == waterCan.texture || right.Texture == waterCan.texture)
+            //        return true;
+            //}
+            //if (tray.GetFrame() == 1)
+            //{
+            //    return IsConnectedToWater(above);
+            //}
+            //if (tray.GetFrame() == 2)
+            //{
+            //    return IsConnectedToWater(below);
+            //}
+            //if (tray.GetFrame() == 4)
+            //{
+            //    return IsConnectedToWater(right);
+            //}
+            //if (tray.GetFrame() == 5)
+            //{
+            //    return IsConnectedToWater(left);
+            //}
+
+            if (new List<int> { 1,2,3 }.Any(x => x == tray.GetFrame()))
+            {
+                return IsConnectedToWater(above, marked) || IsConnectedToWater(below, marked);
+            }
+            if (new List<int> { 4,5,6 }.Any(x => x == tray.GetFrame()))
+            {
+                return IsConnectedToWater(left, marked) || IsConnectedToWater(right, marked);
+            }
+            if (tray.GetFrame() == 0)
+            {
+                return IsConnectedToWater(above, marked) || IsConnectedToWater(below, marked) || 
+                       IsConnectedToWater(left, marked) || IsConnectedToWater(right, marked);
+            }
+            return false;
         }
 
         protected override void Draw(GameTime gameTime)
@@ -483,6 +589,7 @@ namespace Project1
             if (player.CarriedItems.Count != 0 && validToPlace)
                 player.CarriedItems[0].DrawFrame(_spriteBatch, new Vector2(location.X, location.Y), Facing.Down, Color.White * 0.3f);
             soilPot.Draw(_spriteBatch);
+            trayPot.Draw(_spriteBatch);
             lettuce.Draw(_spriteBatch);
             waterCan.Draw(_spriteBatch);
             player.Draw(_spriteBatch);
