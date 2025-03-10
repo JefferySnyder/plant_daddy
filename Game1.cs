@@ -444,7 +444,6 @@ namespace Project1
                     continue;
                 foreach (var item in repeatedItem.items)
                 {
-
                     item.IsHighlighted = false;                                                                         // Only highlight if
                     if (item.Rect().Intersects(player.getSwingCollision()) &&                                           // in swing radius
                         soilPot.items.Any(x => x.Rect().Location == item.Rect().Location && x.GetFrame() != 1) &&       // is unwatered pot
