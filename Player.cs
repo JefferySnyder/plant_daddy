@@ -51,7 +51,7 @@ namespace Project1
         private const int framesPerSec = 4;
 
         public int inventory = 0;
-        public int points = 10;
+        public int points = 10000;
         float cooldowntime = 1;
         KeyboardState currentKeyState;
         KeyboardState previousKeyState;
@@ -228,34 +228,17 @@ namespace Project1
         public void Draw(SpriteBatch spriteBatch)
         {
             if (IsSwinging)
-            {
                 playerSwing.DrawFrame(spriteBatch, characterDir);
-                if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
-                {
-                    foreach (var ghost in ghosts)
-                    {
-                        playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(0, -4), characterDir + 4, Color.White * ghost.opacity);
-                        //if (characterDir == Facing.Left || characterDir == Facing.Right)
-                        //    playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(0,-4), characterDir + 4, Color.White * ghost.opacity);
-                        //else
-                        //    playerDash.DrawFrame(spriteBatch, ghost.pos + new Vector2(16, 18), characterDir + 4, Color.White * ghost.opacity);
-                        ghost.opacity -= 0.075f;
-                    }
-                }
-            }
+            else if (velocity == Vector2.Zero)
+                playerIdle.DrawFrame(spriteBatch, characterPos, characterDir);
+            else if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
+                playerDash.DrawFrame(spriteBatch, characterPos, characterDir);
             else
+                playerWalk.DrawFrame(spriteBatch, characterDir);
+            foreach (var ghost in ghosts)
             {
-                if (velocity == Vector2.Zero)
-                    playerIdle.DrawFrame(spriteBatch, characterPos, characterDir);
-                else if (velocity.X < -DashThreshold || velocity.Y < -DashThreshold || velocity.X > DashThreshold || velocity.Y > DashThreshold)
-                    playerDash.DrawFrame(spriteBatch, characterPos, characterDir);
-                else
-                    playerWalk.DrawFrame(spriteBatch, characterDir);
-                foreach (var ghost in ghosts)
-                {
-                    playerDash.DrawFrame(spriteBatch, ghost.pos, ghost.dir, Color.White * ghost.opacity);
-                    ghost.opacity -= 0.015f;
-                }
+                playerDash.DrawFrame(spriteBatch, ghost.pos, ghost.dir, Color.White * ghost.opacity);
+                ghost.opacity -= 0.015f;
             }
         }
         public Rectangle getCollision()

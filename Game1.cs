@@ -19,6 +19,7 @@ namespace Project1
         RepeatedItem lettuce;
         RepeatedItem soilPot;
         RepeatedItem trayPot;
+        RepeatedItem trayPipe;
         RepeatedItem waterCan;
         bool validToPlace = true;
 
@@ -74,10 +75,12 @@ namespace Project1
             soilPot.Initialize();
             trayPot = new RepeatedItem();
             trayPot.Initialize();
+            trayPipe = new RepeatedItem();
+            trayPipe.Initialize();
             waterCan = new RepeatedItem();
             waterCan.Initialize();
 
-            repeatedItems = new List<RepeatedItem> { lettuce, soilPot, trayPot, waterCan };
+            repeatedItems = new List<RepeatedItem> { lettuce, soilPot, trayPot, trayPipe, waterCan };
 
             renderTarget = new RenderTarget2D(GraphicsDevice, gameWidth, gameHeight);
             graphicsDevice = GraphicsDevice;
@@ -93,20 +96,33 @@ namespace Project1
             map.Load(Content, "ground-tiles");
             lettuce.Load(Content, "Lettuce_Growth", 5, 0, 2);
             soilPot.Load(Content, "Soil_Pot", 2, 0, 4);
-            for (int i = 1; i < 5; i++)
-            {
-                var pos = new Vector2(gameWidth / 4 / 16 * 16, gameHeight / i / 2 / 16 * 16);
-                soilPot.AddNewItem(pos);
-            }
-            soilPot.items[1].AtlasRow = 1;
+            //for (int i = 2; i < 22; i++)
+            //{
+            //    for (int j = 2; j < 10; j++)
+            //    {
+            //        var pos = new Vector2(i * 16, j * 16);
+            //        soilPot.AddNewItem(pos);
+            //    }
+            //}
+            //soilPot.items.ForEach(x => x.AtlasRow = 1);
+            //soilPot.items.ForEach(x => x.SetFrame(1));
             trayPot.Load(Content, "Tray_Pot", 7, 0, 2);
-            for (int i = 1; i < 5; i++)
+            for (int i = 2; i < 23; i++)
             {
-                var pos = new Vector2(gameWidth / 4 / 16 * 16, 128 + 16 * i);
-                trayPot.AddNewItem(pos);
+                for (int j = 2; j < 13; j++)
+                {
+                    var pos = new Vector2(i * 16, j * 16);
+                    trayPot.AddNewItem(pos);
+                }
+            }
+            trayPipe.Load(Content, "Tray_Pipes", 18, 0, 2);
+            for (int i = 1; i < 24; i++)
+            {
+                var pos = new Vector2(16 * i, 16);
+                trayPipe.AddNewItem(pos);
             }
             waterCan.Load(Content, "Water_Can", 2, 0, 3);
-            var canPos = new Vector2(gameWidth / 2 / 16 * 16, gameHeight / 2 / 16 * 16);
+            var canPos = new Vector2(192, 208);
             waterCan.AddNewItem(canPos);
 
             // Create a new SpriteBatch, which can be used to draw textures.
@@ -116,6 +132,7 @@ namespace Project1
             fontPos = new Vector2(5, 5);
         }
 
+        float cooldown = 0f;
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -140,24 +157,141 @@ namespace Project1
 
             PotCarryLogic(soilPot, elapsed);
             PotCarryLogic(trayPot, elapsed);
+            PotCarryLogic(trayPipe, elapsed);
             WaterCanCarryLogic(waterCan, elapsed);
 
             TrayConnectLogic(trayPot);
+            PipeConnectLogic(trayPipe);
 
             LettucePlacementLogic(lettuce, soilPot);
             LettucePlacementLogic(lettuce, trayPot);
+            cooldown += elapsed;
+            if (cooldown > 1f)
+            {
+                foreach (var item in trayPot.items)
+                {
+                    item.IsConnectedToWater = IsConnectedToWater(item, new List<Vector2>());
+                }
+                cooldown = 0f;
+            }
             LettuceGrowthLogic(lettuce, elapsed);
             LettuceBreakingLogic(lettuce);
 
+        }
+        private bool IsConnectedToWater(AnimatedTexture tray, List<Vector2> marked)
+        {
+            if (tray == null) return false;
+            if (marked.Contains(tray.Position)) return false;
+            marked.Add(tray.Position);
+            //if (tray.Texture == waterCan.texture) return true;
+
+            var below = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == tray.Position);
+            var above = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == tray.Position);
+            var left = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == tray.Position);
+            var right = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == tray.Position);
+
+            if (below == null) below = trayPipe.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == tray.Position);
+            if (above == null) above = trayPipe.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == tray.Position);
+            if (left == null) left = trayPipe.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == tray.Position);
+            if (right == null) right = trayPipe.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == tray.Position);
+
+            //if (below == null) below = waterCan.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == tray.Position);
+            //if (above == null) above = waterCan.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == tray.Position);
+            //if (left == null) left = waterCan.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == tray.Position);
+            //if (right == null) right = waterCan.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == tray.Position);
+
+            if (tray.Texture == trayPipe.texture)
+            {
+                if (tray.Position + new Vector2(0, 16) == waterCan.items[0].Position ||
+                    tray.Position - new Vector2(0, 16) == waterCan.items[0].Position ||
+                    tray.Position + new Vector2(16, 0) == waterCan.items[0].Position ||
+                    tray.Position - new Vector2(16, 0) == waterCan.items[0].Position)
+                    return true;
+
+                if (below != null && below.Texture == trayPipe.texture) return IsConnectedToWater(below, marked);
+                if (above != null && above.Texture == trayPipe.texture) return IsConnectedToWater(above, marked);
+                if (left != null && left.Texture == trayPipe.texture) return IsConnectedToWater(left, marked);
+                if (right != null && right.Texture == trayPipe.texture) return IsConnectedToWater(right, marked);
+            }
+            else
+            {
+                if (new List<int> { 1,2,3 }.Any(x => x == tray.GetFrame()))
+                {
+                    return IsConnectedToWater(above, marked) || IsConnectedToWater(below, marked);
+                }
+                if (new List<int> { 4,5,6 }.Any(x => x == tray.GetFrame()))
+                {
+                    return IsConnectedToWater(left, marked) || IsConnectedToWater(right, marked);
+                }
+                if (tray.GetFrame() == 0)
+                {
+                    return IsConnectedToWater(above, marked) || IsConnectedToWater(below, marked) || 
+                           IsConnectedToWater(left, marked) || IsConnectedToWater(right, marked);
+                }
+            }
+            return false;
+        }
+        private void PipeConnectLogic(RepeatedItem pipes)
+        {
+            foreach (var item in pipes.items)
+            {
+                var below = pipes.items.Any(x => x.Position - new Vector2(0, 16) == item.Position);
+                var above = pipes.items.Any(x => x.Position + new Vector2(0, 16) == item.Position);
+                var left = pipes.items.Any(x => x.Position + new Vector2(16, 0) == item.Position);
+                var right = pipes.items.Any(x => x.Position - new Vector2(16, 0) == item.Position);
+
+                var trayOnY = trayPot.items.Any(x => x.Position - new Vector2(0, 16) == item.Position || x.Position + new Vector2(0, 16) == item.Position);
+                var trayOnX = trayPot.items.Any(x => x.Position - new Vector2(16, 0) == item.Position || x.Position + new Vector2(16, 0) == item.Position);
+
+                if (!trayOnY) trayOnY = waterCan.items.Any(x => x.Position - new Vector2(0, 16) == item.Position || x.Position + new Vector2(0, 16) == item.Position);
+                if (!trayOnX) trayOnX = waterCan.items.Any(x => x.Position - new Vector2(16, 0) == item.Position || x.Position + new Vector2(16, 0) == item.Position);
+
+                if (below && !above && !left && !right)
+                    item.SetFrame(1);
+                else if (!below && above && !left && !right)
+                    item.SetFrame(2);
+                else if (!below && !above && left && !right)
+                    item.SetFrame(3);
+                else if (!below && !above && !left && right)
+                    item.SetFrame(4);
+                else if (below && above && !left && !right && !trayOnX)
+                    item.SetFrame(5);
+                else if (below && above && !left && !right && trayOnX)
+                    item.SetFrame(6);
+                else if (!below && !above && left && right && !trayOnY)
+                    item.SetFrame(7);
+                else if (!below && !above && left && right && trayOnY)
+                    item.SetFrame(8);
+                else if (below && !above && left && !right)
+                    item.SetFrame(9);
+                else if (!below && above && left && !right)
+                    item.SetFrame(10);
+                else if (below && !above && !left && right)
+                    item.SetFrame(11);
+                else if (!below && above && !left && right)
+                    item.SetFrame(12);
+                else if (below && !above && left && right)
+                    item.SetFrame(13);
+                else if (!below && above && left && right)
+                    item.SetFrame(14);
+                else if (below && above && left && !right)
+                    item.SetFrame(15);
+                else if (below && above && !left && right)
+                    item.SetFrame(16);
+                else if (below && above && left && right)
+                    item.SetFrame(17);
+                else
+                    item.SetFrame(0);
+            }
         }
         private void TrayConnectLogic(RepeatedItem trays)
         {
             foreach (var item in trays.items)
             {
-                var below = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == item.Position);
-                var above = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == item.Position);
-                var left = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == item.Position);
-                var right = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == item.Position);
+                var below = trays.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == item.Position);
+                var above = trays.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == item.Position);
+                var left = trays.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == item.Position);
+                var right = trays.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == item.Position);
 
                 if (below != null && above != null && new List<int> { 0,1,2,3 }.Any(x => x == below.GetFrame()) && new List<int> { 0,1,2,3 }.Any(x => x == above.GetFrame()) && new List<int> { 0,1,2,3 }.Any(x => x == item.GetFrame()))
                     item.SetFrame(3);
@@ -357,7 +491,8 @@ namespace Project1
         }
         private void LettucePlacementLogic(RepeatedItem objects, RepeatedItem pots)
         {
-            if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton != ButtonState.Pressed)
+            //if (currentMouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton != ButtonState.Pressed)
+            if (currentMouseState.RightButton == ButtonState.Pressed)
             {
                 foreach (var pot in pots.items)
                 {
@@ -495,7 +630,7 @@ namespace Project1
                 }
                 foreach (var tray in trayPot.items)
                 {
-                    if (tray.Rect().Location == item.Rect().Location && IsConnectedToWater(tray, new List<Vector2>()))
+                    if (tray.Rect().Location == item.Rect().Location && item.IsConnectedToWater)
                     {
                         item.growthCountdown -= elapsed;
                         if (item.growthCountdown <= 0)
@@ -506,60 +641,6 @@ namespace Project1
                     }
                 }
             }
-        }
-        private bool IsConnectedToWater(AnimatedTexture tray, List<Vector2> marked)
-        {
-            if (tray == null) return false;
-            if (marked.Contains(tray.Position)) return false;
-            marked.Add(tray.Position);
-            if (tray.Texture == waterCan.texture) return true;
-
-            var below = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == tray.Position);
-            var above = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == tray.Position);
-            var left = trayPot.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == tray.Position);
-            var right = trayPot.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == tray.Position);
-
-            if (below == null) below = waterCan.items.FirstOrDefault(x => x.Position - new Vector2(0, 16) == tray.Position);
-            if (above == null) above = waterCan.items.FirstOrDefault(x => x.Position + new Vector2(0, 16) == tray.Position);
-            if (left == null) left = waterCan.items.FirstOrDefault(x => x.Position + new Vector2(16, 0) == tray.Position);
-            if (right == null) right = waterCan.items.FirstOrDefault(x => x.Position - new Vector2(16, 0) == tray.Position);
-
-            //if (tray.GetFrame() == 0 && (above != null || below != null || left != null || right != null))
-            //{
-            //    if (above.Texture == waterCan.texture || below.Texture == waterCan.texture || left.Texture == waterCan.texture || right.Texture == waterCan.texture)
-            //        return true;
-            //}
-            //if (tray.GetFrame() == 1)
-            //{
-            //    return IsConnectedToWater(above);
-            //}
-            //if (tray.GetFrame() == 2)
-            //{
-            //    return IsConnectedToWater(below);
-            //}
-            //if (tray.GetFrame() == 4)
-            //{
-            //    return IsConnectedToWater(right);
-            //}
-            //if (tray.GetFrame() == 5)
-            //{
-            //    return IsConnectedToWater(left);
-            //}
-
-            if (new List<int> { 1,2,3 }.Any(x => x == tray.GetFrame()))
-            {
-                return IsConnectedToWater(above, marked) || IsConnectedToWater(below, marked);
-            }
-            if (new List<int> { 4,5,6 }.Any(x => x == tray.GetFrame()))
-            {
-                return IsConnectedToWater(left, marked) || IsConnectedToWater(right, marked);
-            }
-            if (tray.GetFrame() == 0)
-            {
-                return IsConnectedToWater(above, marked) || IsConnectedToWater(below, marked) || 
-                       IsConnectedToWater(left, marked) || IsConnectedToWater(right, marked);
-            }
-            return false;
         }
 
         protected override void Draw(GameTime gameTime)
@@ -587,6 +668,7 @@ namespace Project1
                 player.CarriedItems[0].DrawFrame(_spriteBatch, new Vector2(location.X, location.Y), Facing.Down, Color.White * 0.3f);
             soilPot.Draw(_spriteBatch);
             trayPot.Draw(_spriteBatch);
+            trayPipe.Draw(_spriteBatch);
             lettuce.Draw(_spriteBatch);
             waterCan.Draw(_spriteBatch);
             player.Draw(_spriteBatch);

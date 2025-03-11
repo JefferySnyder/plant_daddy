@@ -36,6 +36,13 @@ namespace Project1
             tempAT.Position = pos;
             items.Add(tempAT);
         }
+        public void AddNewItem(Vector2 pos, bool isTray)
+        {
+            AnimatedTexture tempAT = new AnimatedTexture(Vector2.Zero, 0.5f);
+            tempAT.LoadWithoutContent(texture, frameCount, framesPerSec, frameRows);
+            tempAT.Position = pos;
+            items.Add(tempAT);
+        }
         public void HighlightingLogic(Player player)
         {
             AnimatedTexture closest = null;

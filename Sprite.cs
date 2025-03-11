@@ -11,6 +11,7 @@ namespace Project1
         public bool IsHighlighted = false;
         public bool IsAlive = true;
         public bool IsBeingCarried = false;
+        public bool IsConnectedToWater = false;
 
 
         public Sprite(Texture2D texture, Vector2 position)
